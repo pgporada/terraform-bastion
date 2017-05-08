@@ -1,4 +1,7 @@
 # Overview: terraform-bastion
+
+Please note that this project makes some assumptions based on how I have my architecture designed. I choose to store remote state and variables inside S3. I use the Makefile to provide a clean interface to using Terraform and my Ansible projects. If you need help, please ask!
+
 Builds the following infrastructure
 
 * EC2 instance
