@@ -1,32 +1,31 @@
 variable "region" {}
 variable "env" {}
-variable "aws_account_id" {}
+variable "account_id" {}
 variable "key_path" {}
 variable "key_name" {}
 variable "ec2_bastion_instance_type" {}
 variable "ec2_bastion_user" {}
-variable "access" {}
-variable "secret" {}
+variable "state_bucket" {}
+variable "kms_key_id" {}
 variable "ip_allow1" {}
 variable "ip_allow2" {}
 variable "ip_allow3" {}
 variable "ip_allow4" {}
+variable "ip_allow5" {}
 
 terraform {
-  required_version = ">= 0.9.4"
+  required_version = ">= 0.9.9"
+
   backend "s3" {
-    encrypt    = 1
-    acl        = "private"
-    bucket     = "pgporada-state"
+    encrypt = true
+    acl     = "private"
   }
 }
 
 provider "aws" {
   region              = "${var.region}"
   profile             = "${var.env}"
-  allowed_account_ids = ["544271576467"]
-  access_key          = "${var.access}"
-  secret_key          = "${var.secret}"
+  allowed_account_ids = ["${var.account_id}"]
 }
 
 data "terraform_remote_state" "vpc" {
@@ -34,7 +33,7 @@ data "terraform_remote_state" "vpc" {
 
   config {
     region     = "${var.region}"
-    bucket     = "bucket"
+    bucket     = "${var.state_bucket}"
     key        = "terraform/vpc/${var.env}.tfstate"
     profile    = "${var.env}"
     encrypt    = 1
@@ -58,6 +57,8 @@ module "bastion" {
   ip_allow2        = "${var.ip_allow2}"
   ip_allow3        = "${var.ip_allow3}"
   ip_allow4        = "${var.ip_allow4}"
+  ip_allow5        = "${var.ip_allow5}"
+  state_bucket     = "${var.state_bucket}"
 }
 
 output "environment" {

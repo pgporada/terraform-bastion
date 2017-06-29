@@ -52,27 +52,27 @@ export AWS_DEFAULT_REGION=${TERRAFORM_region}
 # Get the machine-user key so we can pull code from the remote repository
 mkdir -p /root/.ssh
 chmod 0700 /root/.ssh
-aws s3 cp s3://my-state-bucket/ssh/${TERRAFORM_env}/machine-user/gitlab-machine-user /root/.ssh/gitlab-machine-user
-chmod 0600 /root/.ssh/gitlab-machine-user
+aws s3 cp s3://${TERRAFORM_s3bucket}/ssh/${TERRAFORM_env}/machine-user/github-machine-user /root/.ssh/github-machine-user
+chmod 0600 /root/.ssh/github-machine-user
 
-# Get the gitlab.com SSH information so we don't get prompted when pulling code
-ssh-keyscan -t rsa gitlab.com >> /root/.ssh/known_hosts
+# Get the github.com SSH information so we don't get prompted when pulling code
 ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
 command cp /root/.ssh/known_hosts /home/${TERRAFORM_user}/.ssh/known_hosts
 chown ${TERRAFORM_user}:${TERRAFORM_user} /home/${TERRAFORM_user}/.ssh/known_hosts
 
-# Allow Ansible to SSH in from Jenkins
-mkdir -p /home/${TERRAFORM_user}/.ssh
-chmod 0700 /home/${TERRAFORM_user}/.ssh
-chown ${TERRAFORM_user}:${TERRAFORM_user} /home/${TERRAFORM_user}/.ssh
-aws s3 cp s3://my-state-bucket/ssh/${TERRAFORM_env}/common/${TERRAFORM_env}_jenkinsdeploy.pub /home/${TERRAFORM_user}/.ssh/${TERRAFORM_env}_jenkinsdeploy.pub
-cat /home/${TERRAFORM_user}/.ssh/${TERRAFORM_env}_jenkinsdeploy.pub >> /home/${TERRAFORM_user}/.ssh/authorized_keys
-rm -f /home/${TERRAFORM_user}/.ssh/${TERRAFORM_env}_jenkinsdeploy.pub
+# Let's say you wanted to allow Ansible to SSH in from Jenkins
+##############################################################
+# mkdir -p /home/${TERRAFORM_user}/.ssh
+# chmod 0700 /home/${TERRAFORM_user}/.ssh
+# chown ${TERRAFORM_user}:${TERRAFORM_user} /home/${TERRAFORM_user}/.ssh
+# aws s3 cp s3://my-state-bucket/ssh/${TERRAFORM_env}/common/${TERRAFORM_env}_jenkinsdeploy.pub /home/${TERRAFORM_user}/.ssh/${TERRAFORM_env}_jenkinsdeploy.pub
+# cat /home/${TERRAFORM_user}/.ssh/${TERRAFORM_env}_jenkinsdeploy.pub >> /home/${TERRAFORM_user}/.ssh/authorized_keys
+# rm -f /home/${TERRAFORM_user}/.ssh/${TERRAFORM_env}_jenkinsdeploy.pub
 
 # Get the ansible playbook from the repository
 ssh-agent bash -c "ssh-add ~/.ssh/gitlab-machine-user; \
     cd /root; \
-    git clone git@gitlab.com:project/ansible-playbook-bastion.git"
+    git clone git@github.com:pgporada/ansible-playbook-bastion.git"
 
 # Install Ansible playbook dependencies
 cd /root/ansible-playbook-bastion
@@ -84,7 +84,7 @@ ssh-agent bash -c "ssh-add ~/.ssh/gitlab-machine-user; \
     make install-ansible-modules"
 
 # Gather any secrets from S3
-aws s3 cp s3://my-state-bucket/ansible/${TERRAFORM_env}/bastion/all.yml /root/ansible-playbook-bastion/ansible/environments/aws/group_vars/all.yml
+aws s3 cp s3://${TERRAFORM_s3bucket}/ansible/${TERRAFORM_env}/bastion/all.yml /root/ansible-playbook-bastion/ansible/environments/aws/group_vars/all.yml
 chmod +x /root/ansible-playbook-bastion/ansible/environments/aws/inventory/ec2.py
 
 # Run the playbook on the node itself

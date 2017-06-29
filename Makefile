@@ -22,20 +22,19 @@ set-env:
      fi
 	@echo -e "\nRemoving existing ENVIRONMENT.tfvars from local directory"
 	@find . -maxdepth 1 -type f -name '*.tfvars' ! -name example_ENV.tfvars -exec rm -f {} \;
-	@echo -e "\nPulling fresh $(ENVIRONMENT).tfvars from s3://pgporada-state/terraform/$(BUCKETKEY)/"
-	@aws s3 cp s3://pgporada-state/terraform/$(BUCKETKEY)/$(ENVIRONMENT).tfvars . --profile=c6h12o6
+	@echo -e "\nPulling fresh $(ENVIRONMENT).tfvars from s3://$(AWS_STATE_BUCKET)/terraform/$(BUCKETKEY)/"
+	@aws s3 cp s3://$(AWS_STATE_BUCKET)/terraform/$(BUCKETKEY)/$(ENVIRONMENT).tfvars . --profile=$(AWS_PROFILE)
 
 init: validate set-env
 	@rm -rf .terraform/*
 	@terraform init \
-		-backend-config="region=us-east-2" \
-        -backend-config="bucket=pgporada-state" \
-        -backend-config="profile=c6h12o6" \
+		-backend-config="region=$(AWS_REGION)" \
+        -backend-config="bucket=$(AWS_STATE_BUCKET)" \
+        -backend-config="profile=$(AWS_PROFILE)" \
         -backend-config="key=terraform/$(BUCKETKEY)/$(ENVIRONMENT).tfstate" \
         -backend-config="encrypt=1" \
         -backend-config="acl=private" \
-        -backend-config="kms_key_id=arn:aws:kms:us-east-2:544271576467:key/b7513120-4f9f-4bd3-9348-3ff5800e6acf"
-	@echo "Your environment: $$(terraform env list | grep '^\*' | awk '{print $$2}')"
+        -backend-config="kms_key_id=$(AWS_KMS_ARN)"
 
 update:
 	@terraform get -update=true 1>/dev/null

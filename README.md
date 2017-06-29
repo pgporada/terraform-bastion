@@ -18,6 +18,7 @@ The Makefile will pull down a fresh secrets variable file from S3 during the **p
 - - - -
 # Updating variables for an environment
 
+
     aws s3 --profile=default cp s3://my-state-bucket/terraform/bastion/example.tfvars .
     vim .tfvars
     aws s3 --profile=default cp .tfvars s3://my-state-bucket/terraform/bastion/example.tfvars
@@ -30,4 +31,4 @@ The Makefile will pull down a fresh secrets variable file from S3 during the **p
 # Author Information and License
 GPLv3
 
-(C) 2017 [Phil Porada](https://philporada.com)
+(C) 2017 [Phil Porada](https://philporada.com) - philporada@gmail.com

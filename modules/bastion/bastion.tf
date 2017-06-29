@@ -7,10 +7,12 @@ variable "vpc_cidr" {}
 variable "subnet_ids" {}
 variable "shell_username" {}
 variable "region" {}
+variable "state_bucket" {}
 variable "ip_allow1" {}
 variable "ip_allow2" {}
 variable "ip_allow3" {}
 variable "ip_allow4" {}
+variable "ip_allow5" {}
 
 // Get us the newest base ami to update our launch configurations
 data "aws_ami" "bastion" {
@@ -78,8 +80,8 @@ resource "aws_iam_role_policy" "instance_policy" {
                 "s3:ListBucket"
             ],
             "Resource": [
-                "arn:aws:s3:::my-state-bucket",
-                "arn:aws:s3:::my-state-bucket/*"
+                "arn:aws:s3:::${var.state_bucket}",
+                "arn:aws:s3:::${var.state_bucket}/*"
             ]
         },
         {
@@ -88,9 +90,9 @@ resource "aws_iam_role_policy" "instance_policy" {
                 "S3:GetObject"
             ],
             "Resource": [
-                "arn:aws:s3:::my-state-bucket/ssh/${var.env}/machine-user/*",
-                "arn:aws:s3:::my-state-bucket/ssh/${var.env}/common/*",
-                "arn:aws:s3:::my-state-bucket/ansible/${var.env}/bastion/*"
+                "arn:aws:s3:::${var.state_bucket}/ssh/${var.env}/machine-user/*",
+                "arn:aws:s3:::${var.state_bucket}/ssh/${var.env}/common/*",
+                "arn:aws:s3:::${var.state_bucket}/ansible/${var.env}/bastion/*"
             ]
         },
         {
@@ -118,7 +120,7 @@ EOT
 }
 
 resource "aws_iam_instance_profile" "bastion" {
-  name  = "${var.env}-bastion-instance-profile"
+  name = "${var.env}-bastion-instance-profile"
   role = "${aws_iam_role.instance_role.name}"
 }
 
@@ -143,7 +145,7 @@ resource "aws_security_group" "bastion" {
     protocol    = "tcp"
     from_port   = 22
     to_port     = 22
-    cidr_blocks = ["${var.ip_allow1}","${var.ip_allow2}","${var.ip_allow3}","${var.ip_allow4}"]
+    cidr_blocks = ["${var.ip_allow1}", "${var.ip_allow2}", "${var.ip_allow3}", "${var.ip_allow4}", "${var.ip_allow5}"]
   }
 
   ingress {
@@ -165,19 +167,20 @@ data "template_file" "bastion" {
   template = "${file("${path.module}/init.sh")}"
 
   vars {
-    TERRAFORM_env       = "${var.env}"
-    TERRAFORM_role      = "bastion"
-    TERRAFORM_user      = "${var.shell_username}"
-    TERRAFORM_hosts     = "localhost"
-    TERRAFORM_region    = "${var.region}"
+    TERRAFORM_env      = "${var.env}"
+    TERRAFORM_role     = "bastion"
+    TERRAFORM_user     = "${var.shell_username}"
+    TERRAFORM_hosts    = "localhost"
+    TERRAFORM_region   = "${var.region}"
+    TERRAFORM_s3bucket = "${var.state_bucket}"
   }
 }
 
 // Bastion does not run in an ASG. Without an EIP, everytime Bastion is destroyed/recreated
 // it will get a new randomized EIP. This prevents the randomization.
 resource "aws_eip" "bastion" {
-    vpc         = true
-    instance    = "${aws_instance.bastion.id}"
+  vpc      = true
+  instance = "${aws_instance.bastion.id}"
 }
 
 resource "aws_instance" "bastion" {
